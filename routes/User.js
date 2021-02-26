@@ -4,7 +4,8 @@ const passport = require("passport");
 const passportConfig = require("../passport");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const Todo = require("../models/Todo");
+const MenuItem = require("../models/MenuItem");
+const { default: Menu } = require("../client/src/Components/MenuTest");
 
 const signToken = (userID) => {
   return jwt.sign(
@@ -78,20 +79,20 @@ userRouter.get(
 );
 
 userRouter.post(
-  "/todo",
+  "/menu-item",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
-    const todo = new Todo(req.body);
-    todo.save((err) => {
+    const menuItem = new MenuItem(req.body);
+    menuItem.save((err) => {
       if (err) {
         res.status(500).json({
           message: {
-            msgBody: "An error has occured creating the todo",
+            msgBody: "An error has occured creating the menu item",
             msgError: true,
           },
         });
       } else {
-        req.user.todos.push(todo);
+        req.user.menuItems.push(menuItem);
         req.user.save((err) => {
           if (err) {
             res.status(500).json({
@@ -103,7 +104,7 @@ userRouter.post(
           } else {
             res.status(200).json({
               message: {
-                msgBody: "Successfully created todo",
+                msgBody: "Successfully created menu item",
                 msgError: false,
               },
             });
@@ -115,11 +116,11 @@ userRouter.post(
 );
 
 userRouter.get(
-  "/todos",
+  "/menu-items",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
     User.findById({ _id: req.user._id })
-      .populate("todos")
+      .populate("menuItems")
       .exec((err, document) => {
         if (err) {
           res.status(500).json({
@@ -129,7 +130,7 @@ userRouter.get(
             },
           });
         } else {
-          res.status(200).json({ todos: document.todos, authenticated: true });
+          res.status(200).json({ menuItems: document.menuItems, authenticated: true });
         }
       });
   }

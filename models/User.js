@@ -18,7 +18,7 @@ const UserSchema = new mongoose.Schema({
     default: "user",
     required: true,
   },
-  todos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Todo" }],
+  menuItems: [{ type: mongoose.Schema.Types.ObjectId, ref: "MenuItem" }],
 });
 
 UserSchema.pre("save", function (next) {
