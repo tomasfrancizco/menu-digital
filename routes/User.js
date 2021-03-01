@@ -5,7 +5,10 @@ const passportConfig = require("../passport");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const MenuItem = require("../models/MenuItem");
-const { default: Menu } = require("../client/src/Components/MenuTest");
+const Menu = require("../models/Menu");
+const { isValidObjectId } = require("mongoose");
+
+const ObjectId = require("mongoose").Types.ObjectId;
 
 const signToken = (userID) => {
   return jwt.sign(
@@ -14,7 +17,7 @@ const signToken = (userID) => {
       sub: userID,
     },
     "tomasfrancizco",
-    { expiresIn: "1h" }
+    { expiresIn: "24h" }
   );
 };
 
@@ -79,6 +82,65 @@ userRouter.get(
 );
 
 userRouter.post(
+  "/menu",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const menu = new Menu(req.body);
+    menu.save((err) => {
+      if (err) {
+        res.status(500).json({
+          message: {
+            msgBody: "An error has occured creating the menu",
+            msgError: true,
+          },
+        });
+      } else {
+        req.user.menu.push(menu);
+        req.user.save((err) => {
+          if (err) {
+            res.status(500).json({
+              message: {
+                msgBody: "An error has occured",
+                msgError: true,
+              },
+            });
+          } else {
+            res.status(200).json({
+              message: {
+                msgBody: "Successfully created menu",
+                msgError: false,
+              },
+            });
+          }
+        });
+      }
+    });
+  }
+);
+
+userRouter.get(
+  "/menu",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    Menu.findOne({ user: req.user._id })
+      .populate("items")
+      .exec((err, document) => {
+        if (err) {
+          res.status(500).json({
+            message: {
+              msgBody: "An error has occured",
+              msgError: true,
+            },
+          });
+        } else {
+          console.log({ document });
+          res.status(200).json({ menu: document.items, authenticated: true });
+        }
+      });
+  }
+);
+
+userRouter.post(
   "/menu-item",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
@@ -97,7 +159,7 @@ userRouter.post(
           if (err) {
             res.status(500).json({
               message: {
-                msgBody: "An error has occured",
+                msgBody: "An error has occured while saving the user",
                 msgError: true,
               },
             });
@@ -107,6 +169,55 @@ userRouter.post(
                 msgBody: "Successfully created menu item",
                 msgError: false,
               },
+            });
+
+            Menu.find({ user: new ObjectId(req.user._id) }, (err, menu) => {
+              if (err) {
+                res.status(500).json({
+                  message: {
+                    msgBody: "An error has occured while retrieving the menu",
+                    msgError: true,
+                  },
+                });
+              } else {
+                if (menu.length === 1) {
+                  menu[0].items.push(menuItem);
+                  menu[0].save(function (err, docs) {
+                    if (err) {
+                      res.status(500).json({
+                        message: {
+                          msgBody: "An error has occured while saving the menu",
+                          msgError: true,
+                        },
+                      });
+                    } else {
+                      return docs;
+                    }
+                  });
+                } else {
+                  const menu = new Menu({
+                    user: req.user._id,
+                    items: [menuItem],
+                  });
+                  menu.save(function (err) {
+                    if (err) {
+                      res.status(500).json({
+                        message: {
+                          msgBody: "An error has occured while saving the menu",
+                          msgError: true,
+                        },
+                      });
+                    } else {
+                      res.status(200).json({
+                        message: {
+                          msgBody: "Successfully added item to menu",
+                          msgError: false,
+                        },
+                      });
+                    }
+                  });
+                }
+              }
             });
           }
         });
@@ -130,7 +241,9 @@ userRouter.get(
             },
           });
         } else {
-          res.status(200).json({ menuItems: document.menuItems, authenticated: true });
+          res
+            .status(200)
+            .json({ menuItems: document.menuItems, authenticated: true });
         }
       });
   }
