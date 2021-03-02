@@ -68,6 +68,21 @@ userRouter.post(
       const token = signToken(_id);
       res.cookie("access_token", token, { httpOnly: true, sameSite: true });
       res.status(200).json({ isAuthenticated: true, user: { username, role } });
+      Menu.findOne({ user: _id })
+        .then((doc) => {
+          if (!doc) {
+            const newMenu = new Menu({ user: _id });
+            newMenu.save();
+          }
+        })
+        .catch((err) => {
+          res.status(500).json({
+            message: {
+              msgBody: err,
+              msgError: true,
+            },
+          });
+        });
     }
   }
 );
@@ -81,42 +96,42 @@ userRouter.get(
   }
 );
 
-userRouter.post(
-  "/menu",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    const menu = new Menu(req.body);
-    menu.save((err) => {
-      if (err) {
-        res.status(500).json({
-          message: {
-            msgBody: "An error has occured creating the menu",
-            msgError: true,
-          },
-        });
-      } else {
-        req.user.menu.push(menu);
-        req.user.save((err) => {
-          if (err) {
-            res.status(500).json({
-              message: {
-                msgBody: "An error has occured",
-                msgError: true,
-              },
-            });
-          } else {
-            res.status(200).json({
-              message: {
-                msgBody: "Successfully created menu",
-                msgError: false,
-              },
-            });
-          }
-        });
-      }
-    });
-  }
-);
+// userRouter.post(
+//   "/menu",
+//   passport.authenticate("jwt", { session: false }),
+//   (req, res) => {
+//     const menu = new Menu(req.body);
+//     menu.save((err) => {
+//       if (err) {
+//         res.status(500).json({
+//           message: {
+//             msgBody: "An error has occured creating the menu",
+//             msgError: true,
+//           },
+//         });
+//       } else {
+//         req.user.menu.push(menu);
+//         req.user.save((err) => {
+//           if (err) {
+//             res.status(500).json({
+//               message: {
+//                 msgBody: "An error has occured",
+//                 msgError: true,
+//               },
+//             });
+//           } else {
+//             res.status(200).json({
+//               message: {
+//                 msgBody: "Successfully created menu",
+//                 msgError: false,
+//               },
+//             });
+//           }
+//         });
+//       }
+//     });
+//   }
+// );
 
 userRouter.get(
   "/menu",
@@ -133,7 +148,6 @@ userRouter.get(
             },
           });
         } else {
-          console.log({ document });
           res.status(200).json({ menu: document.items, authenticated: true });
         }
       });
@@ -226,28 +240,28 @@ userRouter.post(
   }
 );
 
-userRouter.get(
-  "/menu-items",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    User.findById({ _id: req.user._id })
-      .populate("menuItems")
-      .exec((err, document) => {
-        if (err) {
-          res.status(500).json({
-            message: {
-              msgBody: "An error has occured",
-              msgError: true,
-            },
-          });
-        } else {
-          res
-            .status(200)
-            .json({ menuItems: document.menuItems, authenticated: true });
-        }
-      });
-  }
-);
+// userRouter.get(
+//   "/menu-items",
+//   passport.authenticate("jwt", { session: false }),
+//   (req, res) => {
+//     User.findById({ _id: req.user._id })
+//       .populate("menuItems")
+//       .exec((err, document) => {
+//         if (err) {
+//           res.status(500).json({
+//             message: {
+//               msgBody: "An error has occured",
+//               msgError: true,
+//             },
+//           });
+//         } else {
+//           res
+//             .status(200)
+//             .json({ menuItems: document.menuItems, authenticated: true });
+//         }
+//       });
+//   }
+// );
 
 userRouter.get(
   "/admin",
