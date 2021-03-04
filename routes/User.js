@@ -6,7 +6,6 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const MenuItem = require("../models/MenuItem");
 const Menu = require("../models/Menu");
-const { isValidObjectId } = require("mongoose");
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -34,7 +33,7 @@ userRouter.post("/register", (req, res) => {
     }
     if (user) {
       res.status(400).json({
-        message: { msgBody: "Username already taken", msgError: true },
+        message: { msgBody: "username already in use", msgError: true },
       });
     } else {
       const newUser = new User({ username, password, role });
@@ -96,43 +95,6 @@ userRouter.get(
   }
 );
 
-// userRouter.post(
-//   "/menu",
-//   passport.authenticate("jwt", { session: false }),
-//   (req, res) => {
-//     const menu = new Menu(req.body);
-//     menu.save((err) => {
-//       if (err) {
-//         res.status(500).json({
-//           message: {
-//             msgBody: "An error has occured creating the menu",
-//             msgError: true,
-//           },
-//         });
-//       } else {
-//         req.user.menu.push(menu);
-//         req.user.save((err) => {
-//           if (err) {
-//             res.status(500).json({
-//               message: {
-//                 msgBody: "An error has occured",
-//                 msgError: true,
-//               },
-//             });
-//           } else {
-//             res.status(200).json({
-//               message: {
-//                 msgBody: "Successfully created menu",
-//                 msgError: false,
-//               },
-//             });
-//           }
-//         });
-//       }
-//     });
-//   }
-// );
-
 userRouter.get(
   "/menu",
   passport.authenticate("jwt", { session: false }),
@@ -150,6 +112,26 @@ userRouter.get(
         } else {
           res.status(200).json({ menu: document.items, authenticated: true });
         }
+      });
+  }
+);
+
+userRouter.get(
+  "/menu-item/:id",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const { id } = req.params;
+    MenuItem.findById(id)
+      .then((item) => {
+        res.status(200).json({ item });
+      })
+      .catch((err) => {
+        res.status(500).json({
+          message: {
+            msgBody: "An error has occured retrieving the item",
+            msgError: true,
+          },
+        });
       });
   }
 );
@@ -240,28 +222,52 @@ userRouter.post(
   }
 );
 
-// userRouter.get(
-//   "/menu-items",
-//   passport.authenticate("jwt", { session: false }),
-//   (req, res) => {
-//     User.findById({ _id: req.user._id })
-//       .populate("menuItems")
-//       .exec((err, document) => {
-//         if (err) {
-//           res.status(500).json({
-//             message: {
-//               msgBody: "An error has occured",
-//               msgError: true,
-//             },
-//           });
-//         } else {
-//           res
-//             .status(200)
-//             .json({ menuItems: document.menuItems, authenticated: true });
-//         }
-//       });
-//   }
-// );
+userRouter.delete(
+  "/menu-item/:id",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const { id } = req.params;
+    MenuItem.findOneAndRemove({ _id: id })
+      .then((item) => {
+        res.status(200).json({ item });
+      })
+      .catch((error) => {
+        res.status(500).json({
+          error,
+          message: "There was an error deleting the item",
+        });
+      });
+    Menu.findOneAndUpdate({ user: req.user._id }, { $pull: { items: id } })
+      .then((data) => {
+        res.status(200).json(data);
+      })
+      .catch((err) => {
+        res.status(500).json(err);
+      });
+  }
+);
+
+userRouter.patch(
+  "/menu-item/:id",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const { id } = req.params;
+    MenuItem.findOneAndUpdate(
+      { _id: id },
+      { $set: { ...req.body } },
+      { new: true }
+    )
+      .then((item) => {
+        res.status(200).json({ item });
+      })
+      .catch(() => {
+        res.status(500).json({
+          error,
+          message: "There was an error editin the item",
+        });
+      });
+  }
+);
 
 userRouter.get(
   "/admin",
