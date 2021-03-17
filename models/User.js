@@ -16,7 +16,7 @@ const UserSchema = new mongoose.Schema({
     default: "user",
     required: true,
   },
-  menuItems: [{ type: mongoose.Schema.Types.ObjectId, ref: "MenuItem" }],
+  menus: [{ type: mongoose.Schema.Types.ObjectId, ref: "Menu" }],
 });
 
 UserSchema.pre("save", function (next) {
