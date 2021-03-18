@@ -225,7 +225,7 @@ userRouter.get(
   }
 );
 
-// Post menu-item
+// Crear menu-item
 userRouter.post(
   "/menu-item/:menu",
   passport.authenticate("jwt", { session: false }),
@@ -274,7 +274,26 @@ userRouter.delete(
     const { id } = req.params;
     MenuItem.findOneAndRemove({ _id: id })
       .then((item) => {
-        res.status(200).json({ item });
+        Menu.findOneAndUpdate(
+          { user: req.user._id, businessName: item.menu },
+          { $pull: { items: id } }
+        )
+          .then((menu) => {
+            res.status(200).json({
+              message: {
+                msgBody: "Successfully removed menu-item",
+                msgError: false,
+              },
+            });
+          })
+          .catch((err) => {
+            res.status(500).json({
+              message: {
+                msgBody: "There was an error deleting the menu-item",
+                msgError: true,
+              },
+            });
+          });
       })
       .catch((error) => {
         res.status(500).json({
@@ -282,13 +301,6 @@ userRouter.delete(
           message: "There was an error deleting the item",
         });
       });
-    // Menu.findOneAndUpdate({ user: req.user._id }, { $pull: { items: id } })
-    //   .then((data) => {
-    //     res.status(200).json(data);
-    //   })
-    //   .catch((err) => {
-    //     res.status(500).json(err);
-    //   });
   }
 );
 
