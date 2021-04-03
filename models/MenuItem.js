@@ -17,6 +17,11 @@ const MenuItemSchema = new mongoose.Schema({
   },
   menu: {
     type: String,
+  },
+  count: {
+    type: Number,
+    default: 0,
+    required: true
   }
 });
 
